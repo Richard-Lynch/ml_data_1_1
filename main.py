@@ -42,14 +42,20 @@ def parsedata (shortFile, **kwargs):
     Y = data[:, -1]     # target        1*p     [all rows, last column]
     
     class_name2num = {}
-    class_num2name = {}
-    for i, className in enumerate(np.unique(clas)):
-        class_name2num[className] = i
-        class_num2name[i] = className
+    # class_num2name = {}
+    classes = np.unique(clas)
+    classes_len = len(classes)
+    for i, className in enumerate(classes):
+        if i < (classes_len / 2): 
+            class_name2num[className] = 0
+            # class_num2name[0] = className
+        else:
+            class_name2num[className] = 1
+            # class_num2name[1] = className
 
-    Classes = [ class_map[name] for name in clas ] 
+    Classes = [ class_name2num[name] for name in clas ] 
 
-    return X, Y, Classes, class_name2num, class_num2name
+    return X, Y, Classes, class_name2num #, class_num2name
 
 def loadDatasets(datasets):
     for fileName in datasets:
@@ -257,32 +263,39 @@ class algs ():
         self.alg_type = alg_type
         self.metrics = metrics
         self.framework = framework
-        if self.framework == "tensor":
-            addTensorFeatures()
-            addMainModel()
-            self.train_method = self.tensorTrain
-            self.predict_method = self.tensorPredict
-        elif self.framework == "SKL":
-            self.train_method = self.sklTrain
-            self.predict_method = self.sklPredict
-    
-    def sklPredict(self, X):
+        self.addModel()
+        self.addFeatures()
+
+    def addModel(self):
+        pass
+    def addFeatures(self):
+        pass
+    def Predict(self):
+        pass
+    def Train(self):
+        pass
+
+
+class sklAlg (algs):
+    def Predict(self, X):
         self.main_method.predict(X)
 
-    def sklTrain(self, X, Y, C):
+    def Train(self, X, Y, C):
         if self.alg_type == "REG":
             self.main_method.fit(X, Y)
         else:
             self.main_method.fit(X, C)
 
-    def tensorPredict(self, X):
+class tensorAlg (algs):
+    def Predict(self, X):
         predict_fn = tf.estimator.inputs.numpy_input_fn(
             x={"x": X},
             num_epochs=1,
             shuffle=False)
         self.main_method.predict(input_fn=predict_fn, steps=None)
 
-    def tensorTrain(self, X, Y, C):
+
+    def Train(self, X, Y, C):
         if self.alg_type == "REG":
             target = Y
         else:
@@ -293,16 +306,14 @@ class algs ():
             num_epochs=10,
             shuffle=False)
         self.main_method.train(input_fn=train_fn, steps=2000)
-
-    def addTensorModel():
+    
+    def addModel():
         model_dir = tempfile.mkdtemp()
         self.main_method = self.main_method(
             model_dir=model_dir, feature_columns=self.features)
 
-    def addTensorFeatures():
+    def addFeatures():
         self.features = [ tf.feature_column.numeric_column(col) for col in feature_columns ] 
-
-
 
 upperLimit = 5000000
 limit = 0
