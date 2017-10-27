@@ -1,6 +1,6 @@
 #!/usr/local/bin/python3
 
-def RMSE():
+def RMSE(predictions, targets):
     sq_e = 0
     size = 0
     for predicted, target in zip(predictions, targets):
@@ -9,7 +9,7 @@ def RMSE():
         size += 1
     return sq_e/size
 
-def R2():
+def R2(predictions, targets):
     xy = 0
     x = 0
     x2 = 0
@@ -27,7 +27,7 @@ def R2():
     r = r ** 2
     return r
 
-def Accuracy():
+def Accuracy(predictions, targets):
     correct = 0
     size = 0
      for predicted, target in zip(predictions, targets):
@@ -39,7 +39,7 @@ def Accuracy():
     else:
         return 0
 
-def F1():
+def F1(predictions, targets):
     TP = 0
     FP = 0
     TN = 0

@@ -12,6 +12,16 @@ class algs ():
         self.framework = framework
         self.addModel()
 
+    def test(self, predicted, Y, C):
+        if self.alg_type == "REG":
+            target = Y
+        else:
+            taget = C
+        metric_results = []
+        for metric in metrics:
+            metric_results.append(metric(predicted, target))
+        return metric_results
+
     def addModel(self):
         pass
     def addFeatures(self):

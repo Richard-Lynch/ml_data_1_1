@@ -64,6 +64,7 @@ def parsedata (shortFile, **kwargs):
 
 def loadDatasets(datasets):
     for fileName in datasets:
+        # datasets[filename] = readlines(fileName)
         X, Y, C, F = readlines(fileName)
         datasets[filename]["X"] = X
         datasets[filename]["Y"] = Y
@@ -104,25 +105,25 @@ def trainFolds(alg, dset, chunk):
     global folds
     fold_results = []
     kf = KFold(n_split=folds)
-    for i, index in enumerate(kf.split(dset["X"])):
+    for index in kf.split(dset["X"][0:chunk]):
         train_index = index[0]
         test_index = index[1]
-       fold_results.append(assesFold(alg, dset, chunk, train_index, test_index)) 
+        fold_results.append(assesFold(alg, dset, chunk, train_index, test_index)) 
     return averageFolds(fold_results)
         
 def assesFold(alg, dset, chunk, train_index, test_index):
-    global something
-    metric_results = []
     X, Y, C = getTrainTest(dset, chunk, train_index, test_index)
     alg.addFeatures(dset["features"])
     alg.Train(X["train"], Y["train"], C["train"])
-    for metric in alg.metrics_methods:
-        metric_results.append(metric(alg, X["test"], Y["test"], C["test"]))
-    return metric_results
+    return alg.test(alg.predict(X["test"]), Y["test"], C["test"])
 
 def getTrainTest(dset, chunk, train_index, test_index): 
-    X_train, X_test = dset["X"][range(chunk)][train_index], dset["X"][range(chunk)][test_index]
-    Y_train, Y_test = dset["Y"][range(cunk)][train_index], dset["Y"][range(chunk)][test_index]
-    C_train, C_test = dset["C"][range(chunk)][train_index], dset["C"][test_index]
+    X_train, X_test = dset["X"][0:chunk][train_index], dset["X"][0:chunk][test_index]
+    Y_train, Y_test = dset["Y"][0:chunk][train_index], dset["Y"][0:chunk][test_index]
+    C_train, C_test = dset["C"][0:chunk][train_index], dset["C"][0:chunk][test_index]
     return { "train":X_train, "test":X_test }, { "train":Y_train, "test":Y_test }, { "train":C_train, "test":C_test }
 
+def trainSplit(alg, dset, chunk):
+    X_train, X_test = dset["X"][0:(chunk*70)], dset["X"][(chunk*70):]
+    Y_train, Y_test = dset["Y"][0:(chunk*70)], dset["Y"][(chunk*70):]
+    C_train, C_test = dset["C"][0:(chunk*70)], dset["C"][(chunk*70):]
