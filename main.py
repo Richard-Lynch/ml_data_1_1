@@ -13,77 +13,6 @@ import time
 
 from functools import wraps
 
-
-def trainChunk(alg, X, Y, **kwargs):
-    folds = 10
-    
-    cvs = -cross_val_score(alg, X, Y, scoring='neg_mean_squared_error', cv=folds)
-    rmse = [sqrt(mse) for mse in cvs]
-    avgrmse = np.sum(rmse) / len(rmse)
-    
-    r2 = cross_val_score(alg, X, Y, scoring='r2', cv=folds)
-    avgr2 = sum(r2) / len(r2)
-
-
-    # kf = KFold(n_splits=folds)
-    # for i, index in enumerate(kf.split(X)):
-    #     train_index = index[0]
-    #     test_index = index[1]
-# #         print("Train:", train_index, "\nTest:", test_index)
-    #     X_train, X_test = X[train_index], X[test_index]
-    #     Y_train, Y_test = Y[train_index], Y[test_index]
-
-    #     fitSet(alg, X_train, Y_train)
-    #     mean_sq_e += meanSqE(alg, X_test, Y_test)
-    return avgrmse, avgr2
-
-def trainChunks(alg, X, Y, **kwarg):
-    global chunks
-    global limit_broken
-    global chunks_processed
-    global limit
-    chunk_training_time = {}
-    chunk_rmse = []
-    chunk_r2 = []
-    for i, chunk in enumerate(chunks):
-        if chunk > limit:
-            if not limit_broken:
-                limit_broken = True
-                chunk = limit
-        chunks_processed.append(chunk)
-        print ("ragen", range(chunk))
-        rmse, r2 = trainChunk(alg, X[range(chunk)], Y[range(chunk)], log_name=str(chunk), log_time=chunk_training_time)
-        chunk_rmse.append(rmse)
-        chunk_r2.append(r2)
-    return chunk_training_time, chunk_rmse, chunk_r2
-
-def trainLinear(X, Y):
-    global linear
-    global linear_names
-    global chunks
-    global chunks_processed
-    global limit
-    global limit_broken
-    alg_training_time = []
-    alg_rmse = []
-    alg_r2 = []
-    for alg, algname in zip(linear, linear_names):
-        limit_broken = False
-        chunks_processed = []
-        print (algname) 
-        chunk_training_time, chunk_mse, chunk_r2 = trainChunks(alg, X, Y, log_time=alg_training_time)
-        for chunk in chunks:
-            chunk_training_time[str(chunk)] = chunk
-
-        for i in range(len(chunks_processed)):
-            print (chunk_training_time)
-            # if str(chunks_processed[i]) in chunk_training_time:
-            print (algname)
-            print ("chunk: {}\nmse: {}\nr2: {}\ntime: {}\n".format(chunks_processed[i], chunk_mse[i], chunk_r2[i], chunk_training_time[str(chunks_processed[i])]))
-            # else:
-                # print ("FUCCCCCKKKKKKKKKKK")
-    return alg_training_time, alg_rmse, alg_r2 
-
 def readlines (filename, **kwargs):
     upperLimit = 1000
     limit = upperLimit
@@ -178,6 +107,116 @@ DataSets = {
         }
 # for set in datasets: datasets["set"].append(X), .append(Y), .append(classes)
 loadDatasets(datasets)
+results = trainDatasets(datasets)
+def trainDatasets(datasets):
+    dataset_results = []
+    for dset in datasets:
+        dataset_results.append(trainAlgs(dset))
+    return dataset_results
+
+def trainAlgs(dset):
+    global algs
+    alg_results = []
+    for alg in algs:
+        alg_results.append(trainChunks(alg, dset))
+    return alg_results
+
+def trainChunks(alg, dset):
+    global chunks
+    chunk_results = [] 
+    for chunk in chunks:
+        # alg.train_method(alg.main_method, alg.X)
+        chunk_results.append(trainFolds(alg, dset, chunk))
+    return chunk_results
+
+def trainFolds(alg, dset, chunk):
+    global folds
+    fold_results = []
+    kf = KFold(n_split=folds)
+    for i, index in enumerate(kf.split(dset["X"])):
+        train_index = index[0]
+        test_index = index[1]
+       fold_results.append(assesFold(alg, dset, chunk, train_index, test_index)) 
+    return averageFolds(fold_results)
+        
+def assesFold(alg, dset, chunk, train_index, test_index):
+    global something
+    metric_results = []
+    X, Y = getTrainTest(dset, chunk, train_index, test_index, alg.alg_type)
+    alg.train_method(X["train"], Y["train"])
+    for metric in alg.metrics_methods:
+        metric_results.append(metric(X["train"], Y["train"], X["test"], Y["test"]))
+    return metric_results
+
+def getTrainTest(dset, chunk, train_index, test_index, aType): 
+    X_train, X_test = dset["X"][range(chunk)][train_index], dset["X"][range(chunk)][test_index]
+    if aType == "Regression":
+        Y_train, Y_test = dset["Y"][range(cunk)][train_index], dset["Y"][range(chunk)][test_index]
+    else:
+        Y_train, Y_test = dset["C"][range(chunk)][train_index], dset["C"][test_index]
+    return { "train":X_train, "test":X_test }, { "train":Y_train, "test":Y_test }
+
+def trainSKL(alg, X, Y):
+    alg.train_method(alg.main_method, X, Y)
+
+def trainTensor(alg, X, Y):
+
+    alg.main_method.train(input_fn=alg.train_method, steps=2000)
+
+def trainTanor(alg, X, Y):
+    pass
+
+def testSKL(metric, X, Y, alg):
+    return metric(alg.main_method, X, Y)
+
+def testTensor(metric, X, Y, alg):
+    pass
+
+def testTanor(metric, X, Y, alg):
+    pass
+
+
+class algs ():
+    def __init__ (self,name,main_method,train_method,predict_method,alg_type,metrics,framework,feature_columns):
+        self.name = name
+        self.main_method = main_method
+        self.train_method = main_method
+        self.predict_method = predict_method
+        self.alg_type = alg_type
+        self.metrics = metrics
+        self.framework = framework
+        if self.framework == "tensor":
+            addTensorFeatures()
+            addMainModel()
+            self.train_method = self.tensorTrain
+            self.predict_method = self.tensorPredict
+    
+    def addTensorModel():
+        model_dir = tempfile.mkdtemp()
+        self.main_method = self.main_method(
+            model_dir=model_dir, feature_columns=self.features)
+
+    def addTensorFeatures():
+        self.features = [ tf.feature_column.numeric_column(col) for col in feature_columns ] 
+    
+    def tensorPredict(self, X, Y):
+        predict_fn = tf.estimator.inputs.numpy_input_fn(
+            x={"x": X},
+            y=Y,
+            num_epochs=10,
+            shuffle=False)
+        self.main_method.predict(input_fn=predict_fn, steps=None)
+
+    def tensorTrain(self, X, Y):
+        train_fn =  tf.estimator.inputs.numpy_input_fn(
+            x={"x": X},
+            y=Y,
+            num_epochs=10,
+            shuffle=False)
+        self.main_method.train(input_fn=train_fn, steps=2000)
+
+
+
 
 upperLimit = 5000000
 limit = 0
@@ -186,4 +225,5 @@ feature_names, shortFile = readlines ("SUM_wo_noise.csv")
 X, Y = parsedata (shortFile)
 linear_training_time, linear_rmse, linear_r2 = trainLinear(X, Y)
 # linear_training_time, linear_rmse, linear_r2 = trainLinear(X, Y)
+
 
