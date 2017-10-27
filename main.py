@@ -205,6 +205,48 @@ def R2():
     r = r ** 2
     return r
 
+def Accuracy():
+    correct = 0
+    size = 0
+     for predicted, target in zip(predictions, targets):
+        if predicted - target == 0:
+            correct += 1
+        size += 1
+    if size != 0:
+        return correct/size
+    else:
+        return 0
+
+def F1():
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+    for predicted, target in zip(predictions, targets):
+        if predicted == 1 and target == 0:
+            FP += 1
+        elif predicted == 1 and target == 1:
+            TP += 1
+        elif predicted == 0 and target == 0:
+            TN += 1
+        elif predicted == 0 and target == 1:
+            FN += 1
+        else:
+            print ("Error calculating f1")
+
+    if TP != 0:
+        precision = TP / (TP + FP)
+        recall = TP / ( TP + FN )
+    else:
+        precision = 0
+        recall = 0
+         
+    if precision != 0 or recall != 0:
+        f1 = 2 * ((precision * recall) / (precision + recall))
+    else:
+        f1 = 0
+    return f1
+
 
 class algs ():
     def __init__ (self,name,main_method,train_method,predict_method,alg_type,metrics,framework,feature_columns):
