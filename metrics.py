@@ -1,5 +1,5 @@
 #!/usr/local/bin/python3
-
+import numpy as np
 def RMSE(predictions, targets):
     sq_e = 0
     size = 0
@@ -16,7 +16,7 @@ def R2(predictions, targets):
     y = 0
     y2 = 0
     n = 0
-    for predicted, target in zip(predicitons, targets):
+    for predicted, target in zip(predictions, targets):
         x += predicted
         x2 += predicted ** 2
         y += target
@@ -30,7 +30,7 @@ def R2(predictions, targets):
 def Accuracy(predictions, targets):
     correct = 0
     size = 0
-     for predicted, target in zip(predictions, targets):
+    for predicted, target in zip(predictions, targets):
         if predicted - target == 0:
             correct += 1
         size += 1

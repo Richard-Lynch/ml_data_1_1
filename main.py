@@ -16,7 +16,41 @@ from functools import wraps
 
 from algs import sklAlg
 from algs import tensorAlg
+from algs import loadAlgs
 from metrics import *
+
+
+
+# alg_methods = [ 
+#     linear_model.LinearRegression(),
+#     linear_model.Ridge (alpha = .5)
+#     LogisticRegression(),
+#     KNeighborsClassifier() 
+#     ] 
+# alg_names = [
+#     "LinearRegression", 
+#     "LinearRidge",
+#     "LogisticRegression",
+#     "KNeighborsClassifier"
+#     ]
+# alg_type = [
+#     "Regression",
+#     "Regression",
+#     "Classification",
+#     "Classification"
+#     ]
+# alg_framework = [
+#     skl,
+#     skl,
+#     skl,
+#     skl
+#     ]
+# alg_metrics = [
+#     [RMSE, R2],
+#     [RMSE, R2],
+#     [Accuracy, F1],
+#     [Accuracy, F1]
+#     ]
 
 def readlines (filename, **kwargs):
     upperLimit = 1000
@@ -34,14 +68,14 @@ def readlines (filename, **kwargs):
         shortFile.append(row)
         i += 1
     if shortFile:
-        X, Y, Classes, name2num = parsedata(shortFile)
+        X, Y, Classes, name2num = parsedata(shortFile, len(feature_names))
         return X, Y, Classes, feature_names
     else:
         return None, None, None
 
-def parsedata (shortFile, **kwargs):
-    data = np.loadtxt(shortFile, dtype=int, delimiter=";", usecols=range(1,len(feature_names)-1))
-    clas = np.loadtxt(shortFile, dtype=str, delimiter=";", usecols=len(feature_names)-1)
+def parsedata (shortFile, length):
+    data = np.loadtxt(shortFile, dtype=int, delimiter=";", usecols=range(1,length-1))
+    clas = np.loadtxt(shortFile, dtype=str, delimiter=";", usecols=length-1)
 #     n = data[:, 0]      # row number    1*p     [all rows, 0th column]
     X = data[:, 0:-1]   # features      n*p     [all rows, 1st column to last-1 column]
     Y = data[:, -1]     # target        1*p     [all rows, last column]
@@ -49,6 +83,7 @@ def parsedata (shortFile, **kwargs):
     class_name2num = {}
     # class_num2name = {}
     classes = np.unique(clas)
+    classes[0], classes[2] = classes[2], classes[0]
     classes_len = len(classes)
     for i, className in enumerate(classes):
         if i < (classes_len / 2): 
@@ -58,33 +93,23 @@ def parsedata (shortFile, **kwargs):
             class_name2num[className] = 1
             # class_num2name[1] = className
 
-    Classes = [ class_name2num[name] for name in clas ] 
+    Classes = np.array([ class_name2num[name] for name in clas ])
 
     return X, Y, Classes, class_name2num #, class_num2name
 
-def loadDatasets(datasets):
-    for fileName in datasets:
-        # datasets[filename] = readlines(fileName)
-        X, Y, C, F = readlines(fileName)
-        datasets[filename]["X"] = X
-        datasets[filename]["Y"] = Y
-        datasets[filename]["C"] = C
-        datasets[filename]["F"] = F
+def loadDatasets(DataSets):
+    for FileName in DataSets:
+        # DataSets[FileName] = readlines(FileName)
+        X, Y, C, F = readlines(FileName)
+        DataSets[FileName]["X"] = X
+        DataSets[FileName]["Y"] = Y
+        DataSets[FileName]["C"] = C
+        DataSets[FileName]["F"] = F
 
-DataSets = {
-        "SUM_wo_noise.csv" : {}
-        "SUM_w_noise.csv" : {}
-        }
-
-# chunks = [10000, 50000]
-chunks = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000, 50000000, 100000000]
-
-loadDatasets(datasets)
-results = trainDatasets(datasets)
 def trainDatasets(datasets):
     dataset_results = []
     for dset in datasets:
-        dataset_results.append(trainAlgs(dset))
+        dataset_results.append(trainAlgs(datasets[dset]))
     return dataset_results
 
 def trainAlgs(dset):
@@ -104,18 +129,30 @@ def trainChunks(alg, dset):
 def trainFolds(alg, dset, chunk):
     global folds
     fold_results = []
-    kf = KFold(n_split=folds)
+    kf = KFold(n_splits=folds)
     for index in kf.split(dset["X"][0:chunk]):
         train_index = index[0]
         test_index = index[1]
         fold_results.append(assesFold(alg, dset, chunk, train_index, test_index)) 
-    return averageFolds(fold_results)
-        
+    avg = averageFolds(fold_results, alg.metrics)
+    return avg
 def assesFold(alg, dset, chunk, train_index, test_index):
     X, Y, C = getTrainTest(dset, chunk, train_index, test_index)
-    alg.addFeatures(dset["features"])
+    alg.addFeatures(dset["F"])
     alg.Train(X["train"], Y["train"], C["train"])
-    return alg.test(alg.predict(X["test"]), Y["test"], C["test"])
+    # print (alg.Predict(X["test"]))
+    return alg.test(alg.Predict(X["test"]), Y["test"], C["test"])
+
+def averageFolds(fold_results, metrics):
+    results = []
+    for metric in metrics:
+        results.append(0)
+    for fold in fold_results:
+        for i, metric_value in enumerate(fold):
+            results[i] += metric_value
+    avg_results = np.array([ result / len(fold_results) for result in results ])
+    return avg_results
+
 
 def getTrainTest(dset, chunk, train_index, test_index): 
     X_train, X_test = dset["X"][0:chunk][train_index], dset["X"][0:chunk][test_index]
@@ -127,3 +164,20 @@ def trainSplit(alg, dset, chunk):
     X_train, X_test = dset["X"][0:(chunk*70)], dset["X"][(chunk*70):]
     Y_train, Y_test = dset["Y"][0:(chunk*70)], dset["Y"][(chunk*70):]
     C_train, C_test = dset["C"][0:(chunk*70)], dset["C"][(chunk*70):]
+
+
+datasets = {
+        "SUM_wo_noise.csv" : {}#,
+        # "SUM_wo_noise.csv" : {}
+        }
+folds = 10
+chunks = [10000, 50000]
+# chunks = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000, 50000000, 100000000]
+loadDatasets(datasets)
+algs = loadAlgs()
+# print (datasets)
+# for alg in algs:
+#     print (alg.name)
+results = trainDatasets(datasets)
+print (results)
+
