@@ -101,9 +101,9 @@ def readlines (filename, **kwargs):
         i += 1
     if shortFile:
         X, Y, Classes, name2num, num2name = parsedata(shortFile)
-        return feature_names, X, Y, Classes
+        return X, Y, Classes
     else:
-        return None, None, None, None
+        return None, None, None
 
 def parsedata (shortFile, **kwargs):
     data = np.loadtxt(shortFile, dtype=int, delimiter=";", usecols=range(1,len(feature_names)-1))
@@ -124,7 +124,11 @@ def parsedata (shortFile, **kwargs):
 
 def loadDatasets(datasets):
     for fileName in datasets:
-        readlines(fileName)
+        X, Y, C = readlines(fileName)
+        datasets[filename]["X"] = X
+        datasets[filename]["Y"] = Y
+        datasets[filename]["C"] = C
+
 # chunks = [10000, 50000]
 chunks = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000, 50000000, 100000000]
 
@@ -168,24 +172,12 @@ metrics_methods = {
         "R2?" : r2
         }
     }
-Data_X = [
-   [ X ],
-   [ X ],
-   [ X ],
-   [ X ]
-   ]
-Data_Y = [
-    [ Y ],
-    [ Y ],
-    [ classes ],
-    [ classes ]
-    ]
-
 DataSets = {
-        "SUM_wo_noise.csv" : []
-        "SUM_w_noise.csv" : []
+        "SUM_wo_noise.csv" : {}
+        "SUM_w_noise.csv" : {}
         }
 # for set in datasets: datasets["set"].append(X), .append(Y), .append(classes)
+loadDatasets(datasets)
 
 upperLimit = 5000000
 limit = 0
