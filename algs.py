@@ -3,16 +3,14 @@ import numpy as np
 import tensorflow as tf
 
 class algs ():
-    def __init__ (self,name,main_method,train_method,predict_method,alg_type,metrics,framework,feature_columns):
+    def __init__ (self,name,main_method,alg_type,metrics,framework):
         self.name = name
         self.main_method = main_method
-        self.train_method = main_method
-        self.predict_method = predict_method
+        self.model = self.main_method
         self.alg_type = alg_type
         self.metrics = metrics
         self.framework = framework
         self.addModel()
-        self.addFeatures()
 
     def addModel(self):
         pass
@@ -26,13 +24,13 @@ class algs ():
 
 class sklAlg (algs):
     def Predict(self, X):
-        self.main_method.predict(X)
+        self.model.predict(X)
 
     def Train(self, X, Y, C):
         if self.alg_type == "REG":
-            self.main_method.fit(X, Y)
+            self.model.fit(X, Y)
         else:
-            self.main_method.fit(X, C)
+            self.model.fit(X, C)
 
 class tensorAlg (algs):
     def Predict(self, X):
@@ -40,8 +38,7 @@ class tensorAlg (algs):
             x={"x": X},
             num_epochs=1,
             shuffle=False)
-        self.main_method.predict(input_fn=predict_fn, steps=None)
-
+        self.model.predict(input_fn=predict_fn, steps=None)
 
     def Train(self, X, Y, C):
         if self.alg_type == "REG":
@@ -53,12 +50,55 @@ class tensorAlg (algs):
             y=target,
             num_epochs=10,
             shuffle=False)
-        self.main_method.train(input_fn=train_fn, steps=2000)
+        self.model.train(input_fn=train_fn, steps=2000)
     
-    def addModel():
+    def addFeatures(self, feature_columns):
+        features = [ tf.feature_column.numeric_column(col) for col in feature_columns ] 
         model_dir = tempfile.mkdtemp()
-        self.main_method = self.main_method(
-            model_dir=model_dir, feature_columns=self.features)
+        self.model = self.main_method(
+            model_dir=model_dir, feature_columns=features)
 
-    def addFeatures():
-        self.features = [ tf.feature_column.numeric_column(col) for col in feature_columns ] 
+
+alg_methods = [ 
+    linear_model.LinearRegression(),
+    linear_model.Ridge (alpha = .5)
+    LogisticRegression(),
+    KNeighborsClassifier() 
+    ] 
+alg_names = [
+    "LinearRegression", 
+    "LinearRidge",
+    "LogisticRegression",
+    "KNeighborsClassifier"
+    ]
+alg_type = [
+    "Regression",
+    "Regression",
+    "Classification",
+    "Classification"
+    ]
+alg_framework = [
+    skl,
+    skl,
+    skl,
+    skl
+    ]
+alg_metrics = [
+    [RMSE, R2],
+    [RMSE, R2],
+    [Accuracy, F1],
+    [Accuracy, F1]
+    ]
+
+def loadAlgs():
+    global alg_methods, alg_names, alg_types, alg_fameworks, alg_metric_lists
+    newAlgs = []
+    for method, name, _type, framework, metric_list in zip(alg_methods, alg_names, alg_types, alg_frameworks, alg_metrics_lists):
+        if framework == "skl":
+            newAlgs.append(sklAlg(name, method, _type, metric_list, framework):
+        elif framework == "tensor":
+            newAlgs.append(tensorAlg(name, method, _type, metric_list, framework):
+        elif framework == "???":
+            newAlgs.append(sklAlg(name, method, _type, metric_list, framework):
+    return newAlgs
+    
