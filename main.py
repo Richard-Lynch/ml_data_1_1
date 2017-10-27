@@ -13,46 +13,6 @@ import time
 
 from functools import wraps
 
-def readlines (filename, **kwargs):
-    global upperLimit
-    f = open(filename)
-    feature_names = f.readline().split()
-
-    shortFile = []
-    i = 0
-    while True:
-        row = f.readline()
-        if row == "" or i >= upperLimit:
-            print ("hit limit:", i)
-            global limit
-            limit = i
-            break
-        shortFile.append(row)
-        i += 1
-    return feature_names, shortFile
-
-# @timeit
-def parsedata (shortFile, **kwargs):
-    data = np.loadtxt(shortFile, dtype=int, delimiter=";", usecols=range(1,len(feature_names)-1))
-    clas = np.loadtxt(shortFile, dtype=str, delimiter=";", usecols=len(feature_names)-1)
-#     n = data[:, 0]      # row number    1*p     [all rows, 0th column]
-    X = data[:, 0:-1]   # features      n*p     [all rows, 1st column to last-1 column]
-    Y = data[:, -1]     # target        1*p     [all rows, last column]
-    classes = np.unique(clas)
-    class_map = {}
-    for i, classN in enumerate(classes):
-        class_map[classN] = i
-
-    indices = np.random.permutation(len(X))
-
-    y = [ class_map[name] for name in clas ] 
-
-    print (classes)
-    print (np.unique(classes))
-    print (np.unique(y))
-    print (y[0:10])
-    print (len(y))
-    return X[indices], np.array(y)[indices]
 
 def trainChunk(alg, X, Y, **kwargs):
     folds = 10
@@ -124,12 +84,109 @@ def trainLinear(X, Y):
                 # print ("FUCCCCCKKKKKKKKKKK")
     return alg_training_time, alg_rmse, alg_r2 
 
+def readlines (filename, **kwargs):
+    upperLimit = 1000
+    limit = upperLimit
+    f = open(filename)
+    feature_names = f.readline().split()
+    shortFile = []
+    i = 0
+    while True:
+        row = f.readline()
+        if row == "" or i >= upperLimit:
+            print ("hit limit:", i)
+            limit = i
+            break
+        shortFile.append(row)
+        i += 1
+    if shortFile:
+        X, Y, Classes, name2num, num2name = parsedata(shortFile)
+        return feature_names, X, Y, Classes
+    else:
+        return None, None, None, None
+
+def parsedata (shortFile, **kwargs):
+    data = np.loadtxt(shortFile, dtype=int, delimiter=";", usecols=range(1,len(feature_names)-1))
+    clas = np.loadtxt(shortFile, dtype=str, delimiter=";", usecols=len(feature_names)-1)
+#     n = data[:, 0]      # row number    1*p     [all rows, 0th column]
+    X = data[:, 0:-1]   # features      n*p     [all rows, 1st column to last-1 column]
+    Y = data[:, -1]     # target        1*p     [all rows, last column]
+    
+    class_name2num = {}
+    class_num2name = {}
+    for i, className in enumerate(np.unique(clas)):
+        class_name2num[className] = i
+        class_num2name[i] = className
+
+    Classes = [ class_map[name] for name in clas ] 
+
+    return X, Y, Classes, class_name2num, class_num2name
+
+def loadDatasets(datasets):
+    for fileName in datasets:
+        readlines(fileName)
 # chunks = [10000, 50000]
 chunks = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000, 50000000, 100000000]
-linear = [ linear_model.LinearRegression(), linear_model.Ridge (alpha = .5)] 
-linear_names = ["LinearRegression", "LinearRidge"]
-linear = [ LogisticRegression() , KNeighborsClassifier() ] 
-linear_names = ["classifierRegression", "classifierRidge"]
+
+alg_methods = [ 
+    linear_model.LinearRegression(),
+    linear_model.Ridge (alpha = .5)
+    LogisticRegression(),
+    KNeighborsClassifier() 
+    ] 
+alg_names = [
+    "LinearRegression", 
+    "LinearRidge",
+    "LogisticRegression",
+    "KNeighborsClassifier"
+    ]
+alg_train_methods = [
+    linear_model.LinearRegression.fit,
+    linear_model.Ridge.fit,
+    LogisticRegression.fit,
+    KNeighborsClassifier.fit 
+    ]
+alg_predict_methods = [
+    linear_model.LinearRegression.predict,
+    linear_model.Ridge.predict,
+    LogisticRegression.predict,
+    KNeighborsClassifier.predict
+    ]
+alg_type = [
+    "Regression",
+    "Regression",
+    "Classification",
+    "Classification"
+    ]
+metrics_methods = {
+    "Regression" : {
+        "RMSE" : rmse,
+        "R2" : r2
+        },
+    "Classificaion" : {
+        "Accuracy" : AC,
+        "R2?" : r2
+        }
+    }
+Data_X = [
+   [ X ],
+   [ X ],
+   [ X ],
+   [ X ]
+   ]
+Data_Y = [
+    [ Y ],
+    [ Y ],
+    [ classes ],
+    [ classes ]
+    ]
+
+DataSets = {
+        "SUM_wo_noise.csv" : []
+        "SUM_w_noise.csv" : []
+        }
+# for set in datasets: datasets["set"].append(X), .append(Y), .append(classes)
+
 upperLimit = 5000000
 limit = 0
 limit_broken = False
