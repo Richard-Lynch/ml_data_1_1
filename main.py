@@ -160,30 +160,6 @@ def getTrainTest(dset, chunk, train_index, test_index):
     C_train, C_test = dset["C"][range(chunk)][train_index], dset["C"][test_index]
     return { "train":X_train, "test":X_test }, { "train":Y_train, "test":Y_test }, { "train":C_train, "test":C_test }
 
-def tensorRMSE ():
-    pass
-
-def tensorR2():
-    pass
-
-def tensorAccuracy():
-    pass
-
-def tensorF1(): 
-    pass
-
-def sklRMSE ():
-    pass
-
-def sklR2():
-    pass
-
-def sklAccuracy():
-    pass
-
-def sklF1(): 
-    pass
-
 def RMSE():
     sq_e = 0
     size = 0
