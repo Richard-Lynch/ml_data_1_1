@@ -142,38 +142,68 @@ def trainFolds(alg, dset, chunk):
 def assesFold(alg, dset, chunk, train_index, test_index):
     global something
     metric_results = []
-    X, Y = getTrainTest(dset, chunk, train_index, test_index, alg.alg_type)
-    alg.train_method(X["train"], Y["train"])
+    X, Y, C = getTrainTest(dset, chunk, train_index, test_index)
+    alg.train_method(X["train"], Y["train"], C["train"])
     for metric in alg.metrics_methods:
-        metric_results.append(metric(X["train"], Y["train"], X["test"], Y["test"]))
+        metric_results.append(metric(alg, X["test"], Y["test"], C["test"]))
     return metric_results
 
-def getTrainTest(dset, chunk, train_index, test_index, aType): 
+def getTrainTest(dset, chunk, train_index, test_index): 
     X_train, X_test = dset["X"][range(chunk)][train_index], dset["X"][range(chunk)][test_index]
-    if aType == "Regression":
-        Y_train, Y_test = dset["Y"][range(cunk)][train_index], dset["Y"][range(chunk)][test_index]
-    else:
-        Y_train, Y_test = dset["C"][range(chunk)][train_index], dset["C"][test_index]
-    return { "train":X_train, "test":X_test }, { "train":Y_train, "test":Y_test }
+    Y_train, Y_test = dset["Y"][range(cunk)][train_index], dset["Y"][range(chunk)][test_index]
+    C_train, C_test = dset["C"][range(chunk)][train_index], dset["C"][test_index]
+    return { "train":X_train, "test":X_test }, { "train":Y_train, "test":Y_test }, { "train":C_train, "test":C_test }
 
-def trainSKL(alg, X, Y):
-    alg.train_method(alg.main_method, X, Y)
-
-def trainTensor(alg, X, Y):
-
-    alg.main_method.train(input_fn=alg.train_method, steps=2000)
-
-def trainTanor(alg, X, Y):
+def tensorRMSE ():
     pass
 
-def testSKL(metric, X, Y, alg):
-    return metric(alg.main_method, X, Y)
-
-def testTensor(metric, X, Y, alg):
+def tensorR2():
     pass
 
-def testTanor(metric, X, Y, alg):
+def tensorAccuracy():
     pass
+
+def tensorF1(): 
+    pass
+
+def sklRMSE ():
+    pass
+
+def sklR2():
+    pass
+
+def sklAccuracy():
+    pass
+
+def sklF1(): 
+    pass
+
+def RMSE():
+    sq_e = 0
+    size = 0
+    for predicted, target in zip(predictions, targets):
+        if predicted - target != 0:
+            sq_e += 1
+        size += 1
+    return sq_e/size
+
+def R2():
+    xy = 0
+    x = 0
+    x2 = 0
+    y = 0
+    y2 = 0
+    n = 0
+    for predicted, target in zip(predicitons, targets):
+        x += predicted
+        x2 += predicted ** 2
+        y += target
+        y2 += target ** 2
+        xy += predicted * target
+        n += 1
+    r = ( ( n * xy ) - (x * y) ) / np.sqrt( ( (n * x2) - (x ** 2) ) * ( (n * y2) - (y ** 2) ) )
+    r = r ** 2
+    return r
 
 
 class algs ():
@@ -190,7 +220,38 @@ class algs ():
             addMainModel()
             self.train_method = self.tensorTrain
             self.predict_method = self.tensorPredict
+        elif self.framework == "SKL":
+            self.train_method = self.sklTrain
+            self.predict_method = self.sklPredict
     
+    def sklPredict(self, X):
+        self.main_method.predict(X)
+
+    def sklTrain(self, X, Y, C):
+        if self.alg_type == "REG":
+            self.main_method.fit(X, Y)
+        else:
+            self.main_method.fit(X, C)
+
+    def tensorPredict(self, X):
+        predict_fn = tf.estimator.inputs.numpy_input_fn(
+            x={"x": X},
+            num_epochs=1,
+            shuffle=False)
+        self.main_method.predict(input_fn=predict_fn, steps=None)
+
+    def tensorTrain(self, X, Y, C):
+        if self.alg_type == "REG":
+            target = Y
+        else:
+            target = C
+        train_fn =  tf.estimator.inputs.numpy_input_fn(
+            x={"x": X},
+            y=target,
+            num_epochs=10,
+            shuffle=False)
+        self.main_method.train(input_fn=train_fn, steps=2000)
+
     def addTensorModel():
         model_dir = tempfile.mkdtemp()
         self.main_method = self.main_method(
@@ -198,23 +259,6 @@ class algs ():
 
     def addTensorFeatures():
         self.features = [ tf.feature_column.numeric_column(col) for col in feature_columns ] 
-    
-    def tensorPredict(self, X, Y):
-        predict_fn = tf.estimator.inputs.numpy_input_fn(
-            x={"x": X},
-            y=Y,
-            num_epochs=10,
-            shuffle=False)
-        self.main_method.predict(input_fn=predict_fn, steps=None)
-
-    def tensorTrain(self, X, Y):
-        train_fn =  tf.estimator.inputs.numpy_input_fn(
-            x={"x": X},
-            y=Y,
-            num_epochs=10,
-            shuffle=False)
-        self.main_method.train(input_fn=train_fn, steps=2000)
-
 
 
 
