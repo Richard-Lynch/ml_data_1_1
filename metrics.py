@@ -1,13 +1,41 @@
 #!/usr/local/bin/python3
 import numpy as np
+
 def RMSE(predictions, targets):
     sq_e = 0
     size = 0
+    total = 0
+    minT = min(targets)
+    maxT = max(targets)
+    MinT = None
+    MaxT = None
     for predicted, target in zip(predictions, targets):
-        if predicted - target != 0:
-            sq_e += 1
+        sq_e += (abs(target - predicted) ** 2)
+        print ("taget:", target)
+        print ("predicted:", predicted)
+        print ("cur sq_e:", sq_e)
+        if MinT == None or MinT > target :
+            MinT = target
+        if MaxT == None or MaxT < target :
+            MaxT = target
+        # if abs(predicted - target) < 0.0001:
+        #     sq_e += 1
         size += 1
-    return sq_e/size
+
+    if size == 0:
+        print ("size = 0")
+        return 0
+    elif (maxT - minT) == 0:
+        print ("dif = 0")
+        return 1
+    else:
+        print ("size:", size)
+        print ("sq_e:", sq_e)
+        print ("sqrt:", np.sqrt(sq_e/size))
+        print ("max -min :", maxT - minT)
+        print ("Max,  Min :", MaxT, MinT)
+        print ("Max - Min :", MaxT - MinT)
+        return np.sqrt(sq_e/size)/(maxT - minT)
 
 def R2(predictions, targets):
     xy = 0

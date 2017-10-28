@@ -27,7 +27,7 @@ def readlines (filename, **kwargs):
     global upperLimit
     global limit
     f = open(filename)
-    feature_names = f.readline().replace(',', ';').split(";")
+    feature_names = np.array(f.readline().replace(',', ';').replace(' ', '_').split(";"))
     print (feature_names)
     shortFile = []
     i = 0
@@ -102,11 +102,14 @@ def trainChunks(alg, dset):
     for chunk in chunks:
         if not limitBroken:
             if chunk > limit:
-                chunk = limit
+                print ( "Limit broke" )
                 limitBroken = True
-            chunk_results.append(trainFolds(alg, dset, chunk))
+                chunk_results.append(trainFolds(alg, dset, limit))
+            else:
+                chunk_results.append(trainFolds(alg, dset, chunk))
         else:
-            chunk_results.append(None)
+            chunk_results.append((1, None))
+    limitBroken = False
     return chunk_results
 
 def trainFolds(alg, dset, chunk):
@@ -151,22 +154,22 @@ def trainSplit(alg, dset, chunk):
 
 datasets = {
         "SUM_wo_noise.csv" : {},
-        "SUM_w_noise.csv" : {},
-        "housing_prices.csv" : {},
-        "kc_housing_prices.csv": {}
+        # "SUM_w_noise.csv" : {},
+        # "housing_prices.csv" : {},
+        # "kc_housing_prices.csv": {}
         }
 dataset_names = [
         "The SUM Dataset(without noise)",
-        "The SUM Dataset(with noise)",
-        "Housing Prices Dataset",
-        "KC Housing Prices Dataset"
+        # "The SUM Dataset(with noise)",
+        # "Housing Prices Dataset",
+        # "KC Housing Prices Dataset"
         ]
 folds = 10
 upperLimit = 1000
 limit = upperLimit
 limitBroken = False
 chunks = [100, 500]
-# chunks = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000, 50000000, 100000000]
+# chunks = [100, 500, 1000, 5000, 10000, 50000, 100000]
 loadDatasets(datasets)
 algs = loadAlgs()
 # print (datasets)

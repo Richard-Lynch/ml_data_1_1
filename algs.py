@@ -14,6 +14,7 @@ from sklearn.linear_model import LogisticRegression
 import time
 import tensorflow as tf
 
+import tempfile
 from functools import wraps
 
 # from algs import sklAlg
@@ -32,7 +33,7 @@ class algs ():
         self.addModel()
 
     def test(self, predicted, Y, C):
-        if self.alg_type == "REG":
+        if self.alg_type == "Regression":
             target = Y
         else:
             target = C
@@ -92,39 +93,45 @@ class tensorAlg (algs):
 
 alg_methods = [ 
     linear_model.LinearRegression(),
-    linear_model.Ridge (alpha = .5), 
-    LogisticRegression(),
-    KNeighborsClassifier() 
+    tf.estimator.LinearClassifier
+    # linear_model.Ridge (alpha = .5), 
+    # LogisticRegression(),
+    # KNeighborsClassifier() 
     ] 
 alg_names = [
     "LinearRegression", 
-    "LinearRidge",
-    "LogisticRegression",
-    "KNeighborsClassifier"
+    "LinearClassifier"
+    # "LinearRidge",
+    # "LogisticRegression",
+    # "KNeighborsClassifier"
     ]
 alg_types = [
     "Regression",
-    "Regression",
-    "Classification",
+    # "Regression",
+    # "Classification",
+    # "Classification"
     "Classification"
     ]
 alg_frameworks = [
     "skl",
-    "skl",
-    "skl",
-    "skl"
+    # "skl",
+    # "skl",
+    # "skl"
+    "tensor"
     ]
 alg_metrics_lists = [
     [RMSE, R2],
-    [RMSE, R2],
-    [Accuracy, F1],
+    # [RMSE, R2],
+    # [Accuracy, F1],
+    # [Accuracy, F1]
     [Accuracy, F1]
     ]
 
 alg_metrics_names_lists = [
     ["RMSE", "R2"],
-    ["RMSE", "R2"],
-    ["Accuracy", "F1"],
+    # ["RMSE", "R2"],
+    # ["Accuracy", "F1"],
+    # ["Accuracy", "F1"]
     ["Accuracy", "F1"]
     ]
 
@@ -145,7 +152,7 @@ def loadAlgs():
         elif framework == "???":
             newAlgs.append(sklAlg(name, method, _type, metric_list, framework))
         else:
-            print("huge issue in the fucking algs")
+            print("Issue in algs")
     return newAlgs
 
 # algs = loadAlgs()

@@ -53,7 +53,8 @@ def printResults(datasets_results, allMetrics, alg_types, dataset_names, alg_met
     for dataseti, dataset in enumerate(datasets_results):
         for algi, alg in enumerate(dataset):
             for metrici in range(num_metrics):
-                line = [ chunk[metrici] if chunk.all() != None else "n/a" for chunk in alg ]
+                temp = None
+                line = [ "n/a" if not all(chunk) else chunk[metrici] for chunk in alg ]
                 line.insert(0, "{}; {}; {};".format(alg_names[algi], dataset_names[dataseti], alg_metrics_names_lists[algi][metrici]))
 
                 printArray[
