@@ -121,6 +121,19 @@ alg_metrics_lists = [
     [Accuracy, F1]
     ]
 
+alg_metrics_names_lists = [
+    ["RMSE", "R2"],
+    ["RMSE", "R2"],
+    ["Accuracy", "F1"],
+    ["Accuracy", "F1"]
+    ]
+
+allMetrics =[]
+for alg in alg_metrics_lists:
+    for metric in alg:
+        allMetrics.append(metric)
+
+
 def loadAlgs():
     global alg_methods, alg_names, alg_types, alg_fameworks, alg_metric_lists
     newAlgs = []

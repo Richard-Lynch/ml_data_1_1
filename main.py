@@ -14,56 +14,28 @@ import tensorflow as tf
 
 from functools import wraps
 
-from algs import sklAlg
-from algs import tensorAlg
-from algs import loadAlgs
+from algs import *
+# from algs import sklAlg
+# from algs import tensorAlg
+# from algs import loadAlgs
+# from algs import allMetrics
+# from algs import alg_types
 from metrics import *
-
-
-
-# alg_methods = [ 
-#     linear_model.LinearRegression(),
-#     linear_model.Ridge (alpha = .5)
-#     LogisticRegression(),
-#     KNeighborsClassifier() 
-#     ] 
-# alg_names = [
-#     "LinearRegression", 
-#     "LinearRidge",
-#     "LogisticRegression",
-#     "KNeighborsClassifier"
-#     ]
-# alg_type = [
-#     "Regression",
-#     "Regression",
-#     "Classification",
-#     "Classification"
-#     ]
-# alg_framework = [
-#     skl,
-#     skl,
-#     skl,
-#     skl
-#     ]
-# alg_metrics = [
-#     [RMSE, R2],
-#     [RMSE, R2],
-#     [Accuracy, F1],
-#     [Accuracy, F1]
-#     ]
+from printer import printResults
 
 def readlines (filename, **kwargs):
-    upperLimit = 1000
-    limit = upperLimit
+    global upperLimit
+    global limit
     f = open(filename)
-    feature_names = f.readline().split()
+    feature_names = f.readline().replace(',', ';').split(";")
+    print (feature_names)
     shortFile = []
     i = 0
     while True:
-        row = f.readline()
-        if row == "" or i >= upperLimit:
+        row = f.readline().replace(',', ';')
+        limit = i
+        if row == "" or (i >= upperLimit and upperLimit > 0):
             print ("hit limit:", i)
-            limit = i
             break
         shortFile.append(row)
         i += 1
@@ -71,10 +43,10 @@ def readlines (filename, **kwargs):
         X, Y, Classes, name2num = parsedata(shortFile, len(feature_names))
         return X, Y, Classes, feature_names
     else:
-        return None, None, None
+        return None, None, None, None
 
 def parsedata (shortFile, length):
-    data = np.loadtxt(shortFile, dtype=int, delimiter=";", usecols=range(1,length-1))
+    data = np.loadtxt(shortFile, dtype=float, delimiter=";", usecols=range(1,length-1))
     clas = np.loadtxt(shortFile, dtype=str, delimiter=";", usecols=length-1)
 #     n = data[:, 0]      # row number    1*p     [all rows, 0th column]
     X = data[:, 0:-1]   # features      n*p     [all rows, 1st column to last-1 column]
@@ -83,10 +55,12 @@ def parsedata (shortFile, length):
     class_name2num = {}
     # class_num2name = {}
     classes = np.unique(clas)
-    classes[0], classes[2] = classes[2], classes[0]
+    if "Large Number" in classes:
+        classes[0], classes[2] = classes[2], classes[0]
     classes_len = len(classes)
     for i, className in enumerate(classes):
-        if i < (classes_len / 2): 
+        # class_name2num[className] = i 
+        if i <= (classes_len / 2): 
             class_name2num[className] = 0
             # class_num2name[0] = className
         else:
@@ -94,6 +68,7 @@ def parsedata (shortFile, length):
             # class_num2name[1] = className
 
     Classes = np.array([ class_name2num[name] for name in clas ])
+    # print (Classes)
 
     return X, Y, Classes, class_name2num #, class_num2name
 
@@ -121,9 +96,17 @@ def trainAlgs(dset):
 
 def trainChunks(alg, dset):
     global chunks
+    global limitBroken 
+    global chunk
     chunk_results = [] 
     for chunk in chunks:
-        chunk_results.append(trainFolds(alg, dset, chunk))
+        if not limitBroken:
+            if chunk > limit:
+                chunk = limit
+                limitBroken = True
+            chunk_results.append(trainFolds(alg, dset, chunk))
+        else:
+            chunk_results.append(None)
     return chunk_results
 
 def trainFolds(alg, dset, chunk):
@@ -167,11 +150,22 @@ def trainSplit(alg, dset, chunk):
 
 
 datasets = {
-        "SUM_wo_noise.csv" : {}#,
-        # "SUM_wo_noise.csv" : {}
+        "SUM_wo_noise.csv" : {},
+        "SUM_w_noise.csv" : {},
+        "housing_prices.csv" : {},
+        "kc_housing_prices.csv": {}
         }
+dataset_names = [
+        "The SUM Dataset(without noise)",
+        "The SUM Dataset(with noise)",
+        "Housing Prices Dataset",
+        "KC Housing Prices Dataset"
+        ]
 folds = 10
-chunks = [10000, 50000]
+upperLimit = 1000
+limit = upperLimit
+limitBroken = False
+chunks = [100, 500]
 # chunks = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000, 50000000, 100000000]
 loadDatasets(datasets)
 algs = loadAlgs()
@@ -179,5 +173,25 @@ algs = loadAlgs()
 # for alg in algs:
 #     print (alg.name)
 results = trainDatasets(datasets)
-print (results)
+# print (results)
+printerResults = printResults(results, allMetrics, alg_types, dataset_names, alg_metrics_names_lists, alg_names)
+# for line in printerResults:
+    # print (printerResults[line])
+import csv
+with open("output.csv", 'w') as f:
+    f.write(",")
+    for chunk in chunks:
+        f.write("{},".format(chunk))
+    f.write("\n")
+    for i in range(len(printerResults)):
+        for chunk in printerResults[i]:
+            f.write("{},".format(chunk))
+        f.write("\n")
+    # wr = csv.writer(f)
+    # for i in range(len(printerResults)):
+    #     wr.writerow(printerResults[i])
+
+
+
+
 

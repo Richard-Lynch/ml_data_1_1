@@ -23,7 +23,11 @@ def R2(predictions, targets):
         y2 += target ** 2
         xy += predicted * target
         n += 1
-    r = ( ( n * xy ) - (x * y) ) / np.sqrt( ( (n * x2) - (x ** 2) ) * ( (n * y2) - (y ** 2) ) )
+    dom = np.sqrt( abs( ( (n * x2) - (x ** 2) ) * ( (n * y2) - (y ** 2) ) ) )
+    if dom == 0:
+        r = 0
+    else:
+        r = ( ( n * xy ) - (x * y) ) / dom 
     r = r ** 2
     return r
 
